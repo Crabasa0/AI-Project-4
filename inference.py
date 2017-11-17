@@ -180,7 +180,8 @@ class ExactInference(InferenceModule):
             #print "belief : position", p, ":" ,self.beliefs[p]
             #print "emission model p: ", emissionModel[p]
             #print "P(S): ", busters.SONAR_NOISE_PROBS[noisyDistance]
-            allPossible[p] = emissionModel[util.manhattanDistance(p, pacmanPosition)] * self.beliefs[p] / busters.SONAR_NOISE_PROBS[noisyDistance]
+            #allPossible[p] = emissionModel[util.manhattanDistance(p, pacmanPosition)] * self.beliefs[p] / busters.SONAR_NOISE_PROBS[noisyDistance]
+            allPossible[p] = emissionModel[util.manhattanDistance(p, pacmanPosition)] * self.beliefs[p]
             if allPossible[p] > highestProb:
                 highestProb = allPossible[p]
                 mostLikelyPos = p
