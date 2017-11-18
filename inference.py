@@ -298,6 +298,20 @@ class ParticleFilter(InferenceModule):
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        #this works I think, but I don't have a way to test. Try it out on paper if you want.
+        numPositions = len(self.legalPositions)
+        step = numPositions % self.numParticles
+        particleList = []
+        last = step * -1 #ensures start at 0
+        
+        for p in range (0, self.numParticles):
+            new = last + step
+            if new > numPositions:
+                new = new % numPositions
+            particleList.append(self.legalPositions[new]
+            last = new
+            
+        return particleList
 
     def observe(self, observation, gameState):
         """
@@ -330,6 +344,15 @@ class ParticleFilter(InferenceModule):
         emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
         "*** YOUR CODE HERE ***"
+        #get the prior distribution. This is only necessary for the special case, so move it there.
+        priorDistribution = util.Counter()
+        for p in self.initializeUniformly(gameState):
+            priorDistribution[p] = 1
+        priorDistribution.normalize()
+        
+        
+        
+        
         util.raiseNotDefined()
 
     def elapseTime(self, gameState):
