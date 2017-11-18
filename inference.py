@@ -300,11 +300,12 @@ class ParticleFilter(InferenceModule):
         "*** YOUR CODE HERE ***"
         #this works I think, but I don't have a way to test. Try it out on paper if you want.
         numPositions = len(self.legalPositions)
-        print "numPositions: ", numPositions
+        #print "legal positions: ",self.legalPositions
+        #print "numPositions: ", numPositions
         step = (numPositions % self.numParticles) - 1
         particleList = [None]*self.numParticles #poor attempt at optimization
         last = step * -1 #ensures start at 0
-        print "step: ",step
+        #print "step: ",step
         
         for p in range (0, self.numParticles):
             #print "last: ",last
@@ -351,23 +352,30 @@ class ParticleFilter(InferenceModule):
         emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
         "*** YOUR CODE HERE ***"
-       
+        s = [None]*self.numParticles
+        #print "got observation: ", noisyDistance
         #Special Case #1: Pacman eats the ghost
         if noisyDistance == None:
-            for p in self.particles:
-                p = self.getJailPosition()
-            return self.particles
+            for i in range(0, self.numParticles):
+                s[i] = self.getJailPosition()
+            self.particles = s
+            return s
         
         
-        #update the beliefs
+        #update the beliefs. This step is taking 5ever
+        #print "Updating belief distribution"
         beliefs = util.Counter()
+        beliefDistribution = self.getBeliefDistribution()
         for p in self.particles:
             
-            weight = emissionModel[util.manhattanDistance(p, pacmanPosition)] * self.getBeliefDistribution()[p]
+            weight = emissionModel[util.manhattanDistance(p, pacmanPosition)] * beliefDistribution[p]
             beliefs[p] = weight
+            #print "given ",p," weight ", weight
+            #beliefs.normalize()
         
         #Special Case #2: All particles have 0 weight
         if beliefs.totalCount() == 0:
+            #print "SPECIAL CASE 2 TRIGGERED"
              #get the prior distribution. 
             priorDistribution = util.Counter()
             for p in self.initializeUniformly(gameState):
@@ -375,9 +383,17 @@ class ParticleFilter(InferenceModule):
             beliefs = priorDistribution.normalize()
         
         #sample from new distribution
-        s = []
+        #print "sampling from new distribution"
+        if beliefs == None:
+            #print "BELIEFS IS NULL"
+            beliefs = util.Counter()
+            for p in self.initializeUniformly(gameState):
+                beliefs[p] = 1
+            beliefs.normalize()
+        
+        #beliefs.normalize()
         for i in range(0, self.numParticles):
-            s.append(util.sample(beliefs))
+            s[i] = util.sample(beliefs)
         
         #update the particle list
         self.particles = s
@@ -409,7 +425,7 @@ class ParticleFilter(InferenceModule):
 
         self.particles = newList
         
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
 
     def getBeliefDistribution(self):
         """
