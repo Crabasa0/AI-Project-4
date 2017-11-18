@@ -490,6 +490,7 @@ class JointParticleFilter:
         self.ghostAgents = []
         self.legalPositions = legalPositions
         self.initializeParticles()
+        
 
     def initializeParticles(self):
         """
@@ -513,6 +514,14 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        particleList = []
+        for np in range(self.numParticles):
+            posList = ()
+
+            for ng in range(self.numGhosts):
+                posList + (random.choice(self.legalPositions))
+            particleList.append(posList)
+        self.particles = particleList
 
     def addGhostAgent(self, agent):
         """
@@ -560,6 +569,47 @@ class JointParticleFilter:
         emissionModels = [busters.getObservationDistribution(dist) for dist in noisyDistances]
 
         "*** YOUR CODE HERE ***"
+        s = [None]*self.numParticles
+        
+        #Special Case #1: Pacman eats the ghost. This may need to be moved
+        for i in range(self.numGhosts):
+            if noisyDistances[i] == None:
+                for p in range(0, self.numParticles):
+                    s[p] = getParticleWithGhostInJail(particles[p], i)
+                self.particles = s
+                return s
+        
+        #create new distribution. I don't know if this is right
+        beliefs = util.Counter()
+        beliefDistribution = self.getBeliefDistribution()
+        for p in self.particles:
+                weights = []
+                for i in range(self.numGhosts):
+                    weights[i] = emissionModels[i][util.manhattanDistance(p[i], pacmanPosition)] * beliefDistribution[p]
+            weight = reduce(operator.mul, weights, 1) #Correct? Maybe. Functional? Hellz yea
+            beliefs[p] = weight
+        
+        #Special Case #2: All particles have 0 weight
+        if beliefs.totalCount() == 0:
+            priorDistribution = util.Counter()
+            for p in self.initializeParticles(gameState):
+                priorDistribution[p] = 1
+            beliefs = priorDistribution.normalize()
+            
+        
+        #sample from new distribution
+        if beliefs == None:
+            beliefs = util.Counter()
+            for p in self.initializeUniformly(gameState):
+                beliefs[p] = 1
+            beliefs.normalize()
+        
+        for i in range(0, self.numParticles):
+            s[i] = util.sample(beliefs)
+        
+        #update the particle list
+        self.particles = s
+        return s
 
     def getParticleWithGhostInJail(self, particle, ghostIndex):
         """
@@ -626,7 +676,13 @@ class JointParticleFilter:
         self.particles = newParticles
 
     def getBeliefDistribution(self):
+        beliefs = util.Counter()
+        for p in self.particles:
+            beliefs[p] += 1
+        beliefs.normalize()
+        return beliefs
         "*** YOUR CODE HERE ***"
+        
         util.raiseNotDefined()
 
 # One JointInference module is shared globally across instances of MarginalInference
