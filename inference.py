@@ -516,11 +516,11 @@ class JointParticleFilter:
         "*** YOUR CODE HERE ***"
         particleList = []
         for np in range(self.numParticles):
-            posList = ()
-
+            ghostList = []
             for ng in range(self.numGhosts):
-                posList + (random.choice(self.legalPositions))
-            particleList.append(posList)
+                ghostList.append(random.choice(self.legalPositions))
+                ghostTuple = tuple(ghostList)
+            particleList.append(ghostTuple)
         self.particles = particleList
 
     def addGhostAgent(self, agent):
@@ -577,17 +577,20 @@ class JointParticleFilter:
                 for p in range(0, self.numParticles):
                     s[p] = getParticleWithGhostInJail(particles[p], i)
                 self.particles = s
-                return s
+            return s
         
         #create new distribution. I don't know if this is right
         beliefs = util.Counter()
         beliefDistribution = self.getBeliefDistribution()
         for p in self.particles:
-                weights = []
-                for i in range(self.numGhosts):
-                    weights[i] = emissionModels[i][util.manhattanDistance(p[i], pacmanPosition)] * beliefDistribution[p]
-            weight = reduce(operator.mul, weights, 1) #Correct? Maybe. Functional? Hellz yea
+            weights = []
+            for i in range(self.numGhosts):
+                weights[i] = emissionModels[i][util.manhattanDistance(p[i], pacmanPosition)] * beliefDistribution[p]
+            #weight = reduce(operator.mul, weights, 1) #Correct? Maybe. Functional? Hellz yea
+            weight = sum(weights)
             beliefs[p] = weight
+            
+        beliefs.normalize()
         
         #Special Case #2: All particles have 0 weight
         if beliefs.totalCount() == 0:
@@ -676,13 +679,13 @@ class JointParticleFilter:
         self.particles = newParticles
 
     def getBeliefDistribution(self):
+        
+        "*** YOUR CODE HERE ***"
         beliefs = util.Counter()
         for p in self.particles:
             beliefs[p] += 1
         beliefs.normalize()
         return beliefs
-        "*** YOUR CODE HERE ***"
-        
         util.raiseNotDefined()
 
 # One JointInference module is shared globally across instances of MarginalInference
