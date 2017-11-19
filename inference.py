@@ -514,15 +514,28 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        posParticles = list(itertools.product(self.legalPositions, repeat = self.numGhosts))
+        random.shuffle(posParticles)
+        print "numParticles: ", self.numParticles
+        print "posParticles length: ", len(posParticles)
+        particleList = [None]*self.numParticles
+        for i in range(self.numParticles):
+            particleList[i] = posParticles[i % len(posParticles)]
+        self.particles = particleList
+        return particleList
+        
+        """
+        legal = self.legalPositions
         particleList = []
         for np in range(self.numParticles):
             ghostList = []
             for ng in range(self.numGhosts):
-                ghostList.append(random.choice(self.legalPositions))
-                ghostTuple = tuple(ghostList)
+                pos = random.choice(legal)
+                ghostList.append(pos)
+            ghostTuple = tuple(ghostList)
             particleList.append(ghostTuple)
         self.particles = particleList
-
+        """
     def addGhostAgent(self, agent):
         """
         Each ghost agent is registered separately and stored (in case they are
@@ -571,13 +584,13 @@ class JointParticleFilter:
         "*** YOUR CODE HERE ***"
         s = [None]*self.numParticles
         
-        #Special Case #1: Pacman eats the ghost. This may need to be moved
+         #Special Case #1: Pacman eats the ghost. This may need to be moved
         for i in range(self.numGhosts):
             if noisyDistances[i] == None:
                 for p in range(0, self.numParticles):
-                    s[p] = getParticleWithGhostInJail(particles[p], i)
+                    s[p] = self.getParticleWithGhostInJail(self.particles[p], i)
                 self.particles = s
-            return s
+                #return s
         
         #create new distribution. I don't know if this is right
         beliefs = util.Counter()
@@ -585,33 +598,39 @@ class JointParticleFilter:
         for p in self.particles:
             weights = []
             for i in range(self.numGhosts):
-                weights[i] = emissionModels[i][util.manhattanDistance(p[i], pacmanPosition)] * beliefDistribution[p]
-            #weight = reduce(operator.mul, weights, 1) #Correct? Maybe. Functional? Hellz yea
-            weight = sum(weights)
-            beliefs[p] = weight
+                weights.append(emissionModels[i][util.manhattanDistance(p[i], pacmanPosition)]) #* beliefDistribution[p])
+                
+            weight = reduce(lambda a,b: a*b, weights, 1) #Correct? Maybe. Functional? Hellz yea
+            #weight = sum(weights)
+            beliefs[p] += weight
             
-        beliefs.normalize()
+        
         
         #Special Case #2: All particles have 0 weight
         if beliefs.totalCount() == 0:
             priorDistribution = util.Counter()
-            for p in self.initializeParticles(gameState):
+            for p in self.initializeParticles():
                 priorDistribution[p] = 1
             beliefs = priorDistribution.normalize()
             
         
-        #sample from new distribution
+        #null beliefs mystery case
         if beliefs == None:
             beliefs = util.Counter()
-            for p in self.initializeUniformly(gameState):
+            for p in self.initializeParticles():
                 beliefs[p] = 1
             beliefs.normalize()
+            
         
+            
+        #sample from new distribution    
+        beliefs.normalize()
         for i in range(0, self.numParticles):
             s[i] = util.sample(beliefs)
         
         #update the particle list
         self.particles = s
+    
         return s
 
     def getParticleWithGhostInJail(self, particle, ghostIndex):
@@ -673,7 +692,12 @@ class JointParticleFilter:
             # now loop through and update each entry in newParticle...
 
             "*** YOUR CODE HERE ***"
-
+            particleList = []
+            for ng in range(self.numGhosts):
+                pdg = getPositionDistributionForGhost(setGhostPositions(gameState, newParticle), ng, self.ghostAgents[ng])
+                particleList.append(util.sample(pdg))
+            newParticle = particleList
+            #print "newParticles: ",newParticles
             "*** END YOUR CODE HERE ***"
             newParticles.append(tuple(newParticle))
         self.particles = newParticles
